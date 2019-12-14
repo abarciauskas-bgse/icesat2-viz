@@ -1,0 +1,162 @@
+<html>
+<head>
+  <title>ATL03 h_ph</title>
+  <link rel="stylesheet" type="text/css" href="https://api.tiles.mapbox.com/mapbox-gl-js/v0.54.0/mapbox-gl.css">
+  <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.5/readable/bootstrap.min.css" rel="stylesheet">
+  <meta property="og:site_name" content="ATL03 h_ph"/>
+  <meta property="og:title" content="ATL03 h_ph"/>
+  <meta property="og:description" content=""/>
+  <style>
+    body {
+      background-color: #000000;
+      margin: 0;
+    }
+    #map {
+      height: 100vh;
+      width: 100%;
+      margin: 0 auto;
+    }
+    #content {
+      position:absolute;
+      left:0;
+      right:0;
+      min-height:50px;
+      bottom:0;
+      background:RGBA(255,255,255, 0.9);
+      border-top: 2px solid #333;
+    }
+    .sidecontainer {
+      padding:20px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <div id='content'>
+    <div class="sidecontainer">
+      <div class="row">
+        <div class="col-md-10"><h2>ATL03 photon received height (h_ph)</h2></div>
+        <p><a
+        href='https://nsidc.org/sites/nsidc.org/files/technical-references/ATL03%20Product%20Data%20Dictionary.pdf'>ATL03
+        Data Dictionary</a></p>
+      </div>    
+    </div>
+  </div>
+</body>
+<script src="https://unpkg.com/deck.gl@^7.0.4/dist.min.js"></script>
+<script src="https://api.tiles.mapbox.com/mapbox-gl-js/v0.54.0/mapbox-gl.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script type="text/javascript">
+
+  const { MapboxLayer, PointCloudLayer } = deck;
+  mapboxgl.accessToken = 'pk.eyJ1IjoibGFuZHBsYW5uZXIiLCJhIjoiY2syNm43Y3F2MHV4bzNicGV5d2kyaXJ1dyJ9.4XEHIzZ4Psvemp0lH9l1NA';
+
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/dark-v9',
+    center: [-52.1572, -0.40637],
+    zoom: 14.99,
+    bearing: 50,
+    pitch: 30,
+    hash: true,
+    antialias: true
+  });
+  let currentCollection = 'ATL08';
+  let currentGranuleId = '20190905152748_10620408_002_01';
+  let filePrefix = `${currentCollection}_${currentGranuleId}`;
+  
+  // set dot brightness adjustment
+  const brightness = 1.8
+  const layerId = 'deckgl-PointCloudLayer';
+
+  map.on('style.load', () => {
+    map.addControl(new mapboxgl.NavigationControl());
+    addPointLayer(filePrefix);
+  });
+  
+  function addPointLayer(filePrefix, opts = { layerId }) {
+    const geoJSONUrl = `./geojsons/${filePrefix}.geojson`;
+    $.getJSON(geoJSONUrl, function(geoJSON) {
+      //console.log(JSON.stringify(geoJSON, null, 2));
+      let pointSize = 0;
+      const pointData = geoJSON.features.map(f => {
+        let z = 0;
+        let randomness = Math.random() * 10 - Math.random() * 10;
+        if (f.properties.collection === 'ATL08') {
+          z = f.properties['dem_meters'];
+          // 100 is a good size for atl08 and 5 for atl03
+          pointSize = 100;
+        } else if (f.properties.collection === 'ATL03') {
+          z = f.properties['photon_height_meters'];
+          z = z + randomness;
+          pointSize = 1;
+        }
+
+        return  {
+          position: [
+            f.geometry.coordinates[0], 
+            f.geometry.coordinates[1],
+            z
+          ],
+          color: [245 + randomness, 245 + randomness, 0],
+          properties: f.properties
+        }
+      });
+      //console.log(JSON.stringify(pointData, null, 2));
+      //console.log(`adding layer ${filePrefix}`)
+
+      map.addLayer(new MapboxLayer({
+        id: opts.layerId,
+        type: PointCloudLayer,
+        data: pointData,
+        getPosition: d => d.position,
+        getColor: d => d.color,
+        getNormal: d => [-1, 0, 0],
+        extruded: true,
+        material: {
+          ambient: 35,
+          diffuse: 1,
+          shininess: 50,
+          specularColor: [30, 30, 30]
+        },
+        sizeUnits: 'meters',
+        pointSize,
+        opacity: 0.45,
+        pickable: true,
+        onClick: (info, event) => {
+          // toggle layers
+          if (currentCollection === 'ATL08') {
+            currentCollection = 'ATL03';
+            map.removeLayer(layerId);
+            const beginningSegmentId = info.object.properties.beginning_segment_id;
+            const endingSegmentId = info.object.properties.ending_segment_id;
+            const middleSegmentId = (endingSegmentId - beginningSegmentId) / 2 + beginningSegmentId;
+            for (let idx = beginningSegmentId; idx <= endingSegmentId; idx++) {
+              filePrefix = `${idx}_ATL03_${currentGranuleId}`;
+              addPointLayer(filePrefix, { layerId: `${idx}-layer` });
+              if (idx === middleSegmentId) {
+                console.log(info);
+                map.flyTo({
+                  center: info.lngLat,
+                  zoom: 16.99
+                });
+              }
+            }
+          } else {
+            currentCollection = 'ATL08';
+            map.eachLayer(function (layer) {
+              map.removeLayer(layer);
+            });
+            filePrefix = `ATL08_${currentGranuleId}`;
+            addPointLayer(filePrefix);
+          }
+          return true;
+        }
+      }));
+    });
+  }
+
+</script>
+</html>
