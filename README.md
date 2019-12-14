@@ -18,6 +18,8 @@ At the moment it is focused on simulating some 3-D visualization using mapbox to
   * Run tileserver and point the mvt layer to the tile server
   * Currently the index is not collection dependent and parameters are working for ATL03 photons.
 
+![start.gif](./start.gif)
+
 
 ## References
 

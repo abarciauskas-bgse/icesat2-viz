@@ -83,14 +83,15 @@
       let pointSize = 0;
       const pointData = geoJSON.features.map(f => {
         let z = 0;
-        let randomness = Math.random() * 10 - Math.random() * 10;
+        let zrandomness = Math.random() * 10 - Math.random() * 10;
+        let colorRandomness = Math.random() * 50 - Math.random() * 50;
         if (f.properties.collection === 'ATL08') {
           z = f.properties['dem_meters'];
           // 100 is a good size for atl08 and 5 for atl03
           pointSize = 100;
         } else if (f.properties.collection === 'ATL03') {
           z = f.properties['photon_height_meters'];
-          z = z + randomness;
+          z = z + zrandomness;
           pointSize = 1;
         }
 
@@ -100,7 +101,7 @@
             f.geometry.coordinates[1],
             z
           ],
-          color: [245 + randomness, 245 + randomness, 0],
+          color: [205 + colorRandomness, 205 + colorRandomness, 0],
           properties: f.properties
         }
       });
@@ -140,7 +141,9 @@
                 console.log(info);
                 map.flyTo({
                   center: info.lngLat,
-                  zoom: 16.99
+                  zoom: 16.99,
+                  pitch: 30,
+                  bearing: 50
                 });
               }
             }
