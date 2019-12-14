@@ -16,6 +16,7 @@ At the moment it is focused on simulating some 3-D visualization using mapbox to
     tiles generated from geojson polygon features
   * generate geojson using `atl-to-geojson.py`, then mbtiles using tippecanoe and then join with original using `tile-join`.
   * Run tileserver and point the mvt layer to the tile server
+  * Currently the index is not collection dependent and parameters are working for ATL03 photons.
 
 
 ## References
