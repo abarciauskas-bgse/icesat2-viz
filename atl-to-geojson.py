@@ -18,7 +18,7 @@ f = h5py.File(f"hdfs/{collection}{filename}", 'r')
 # np.sum(list(f['gt1r']['geolocation']['segment_ph_cnt'])) --> 9,978,040
 limit = 1000
 resolution = 0.00001
-
+ph_idx_max = 9978040
 feature_collection = {
     "type": "FeatureCollection",
     "totalFeatures": limit,
@@ -62,7 +62,7 @@ def gen_feature_geometry(latitude, longitude):
    
 
 outfilename = f"{collection}{filename.replace('h5', 'geojson')}"
-for idx in range(3000, 5000):
+for idx in range(100000, 150000):
     feature = {
         "type": "Feature",
         "id": idx,
@@ -84,14 +84,15 @@ for idx in range(3000, 5000):
         # add to the geojson for that segment id by iterating through
         # reference_photon_index to reference_photon_index + segment_ph_ct
         for ph_idx in range(ph_idx_beg, ph_idx_end):
-            latitude = float(heights['lat_ph'][ph_idx])
-            longitude = float(heights['lon_ph'][ph_idx])
-            feature_geometry = gen_feature_geometry(latitude, longitude)
-            feature['geometry'] = feature_geometry
-            height = float(heights['h_ph'][ph_idx])
-            feature['properties']['photon_height_meters'] = height
-            feature['properties']['segment_id'] = segment_id
-            features_list.append(feature)
+            if ph_idx < ph_idx_max:
+                latitude = float(heights['lat_ph'][ph_idx])
+                longitude = float(heights['lon_ph'][ph_idx])
+                feature_geometry = gen_feature_geometry(latitude, longitude)
+                feature['geometry'] = feature_geometry
+                height = float(heights['h_ph'][ph_idx])
+                feature['properties']['photon_height_meters'] = height
+                feature['properties']['segment_id'] = segment_id
+                features_list.append(feature)
         if len(features_list) > 0:
             feature_collection['features'] = features_list
             seg_outfilename = f"{segment_id}_{outfilename}"

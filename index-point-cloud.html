@@ -18,31 +18,27 @@
     }
     #content {
       position:absolute;
-      left:0;
-      right:0;
-      min-height:50px;
-      bottom:0;
-      background:RGBA(255,255,255, 0.9);
-      border-top: 2px solid #333;
+      left: 20;
+      right: 20;
+      /* min-height:50px; */
+      bottom: 20;
     }
     .sidecontainer {
       padding:20px;
     }
-
+    a.mapboxgl-ctrl-logo {
+      margin-left: 10px;
+    }
   </style>
 </head>
 
 <body>
   <div id="map"></div>
   <div id='content'>
-    <div class="sidecontainer">
-      <div class="row">
-        <div class="col-md-10"><h2>ATL03 photon received height (h_ph)</h2></div>
-        <p><a
-        href='https://nsidc.org/sites/nsidc.org/files/technical-references/ATL03%20Product%20Data%20Dictionary.pdf'>ATL03
-        Data Dictionary</a></p>
-      </div>    
-    </div>
+    <h2>ATL03 photon received height (h_ph)</h2>
+      <p><a
+      href='https://nsidc.org/sites/nsidc.org/files/technical-references/ATL03%20Product%20Data%20Dictionary.pdf'>ATL03
+      Data Dictionary</a></p>
   </div>
 </body>
 <script src="https://unpkg.com/deck.gl@^7.0.4/dist.min.js"></script>
@@ -55,13 +51,12 @@
 
   const map = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/dark-v9',
+    style: 'mapbox://styles/mapbox/outdoors-v11',
     center: [-52.1572, -0.40637],
     zoom: 14.99,
-    bearing: 50,
-    pitch: 30,
-    hash: true,
-    antialias: true
+    //bearing: 35,
+    //pitch: 35,
+    hash: true
   });
   let currentCollection = 'ATL08';
   let currentGranuleId = '20190905152748_10620408_002_01';
@@ -84,7 +79,7 @@
       const pointData = geoJSON.features.map(f => {
         let z = 0;
         let zrandomness = Math.random() * 10 - Math.random() * 10;
-        let colorRandomness = Math.random() * 50 - Math.random() * 50;
+        let color = [0, 255, 255];
         if (f.properties.collection === 'ATL08') {
           z = f.properties['dem_meters'];
           // 100 is a good size for atl08 and 5 for atl03
@@ -92,7 +87,8 @@
         } else if (f.properties.collection === 'ATL03') {
           z = f.properties['photon_height_meters'];
           z = z + zrandomness;
-          pointSize = 1;
+          pointSize = 0.5;
+          color = [173, 255, 47];
         }
 
         return  {
@@ -101,11 +97,11 @@
             f.geometry.coordinates[1],
             z
           ],
-          color: [205 + colorRandomness, 205 + colorRandomness, 0],
+          color,
           properties: f.properties
         }
       });
-      //console.log(JSON.stringify(pointData, null, 2));
+      console.log(JSON.stringify(pointData, null, 2));
       //console.log(`adding layer ${filePrefix}`)
 
       map.addLayer(new MapboxLayer({
@@ -115,22 +111,14 @@
         getPosition: d => d.position,
         getColor: d => d.color,
         getNormal: d => [-1, 0, 0],
-        extruded: true,
-        material: {
-          ambient: 35,
-          diffuse: 1,
-          shininess: 50,
-          specularColor: [30, 30, 30]
-        },
         sizeUnits: 'meters',
         pointSize,
-        opacity: 0.45,
+        opacity: 0.33,
         pickable: true,
         onClick: (info, event) => {
           // toggle layers
           if (currentCollection === 'ATL08') {
             currentCollection = 'ATL03';
-            map.removeLayer(layerId);
             const beginningSegmentId = info.object.properties.beginning_segment_id;
             const endingSegmentId = info.object.properties.ending_segment_id;
             const middleSegmentId = (endingSegmentId - beginningSegmentId) / 2 + beginningSegmentId;
@@ -141,12 +129,13 @@
                 console.log(info);
                 map.flyTo({
                   center: info.lngLat,
-                  zoom: 16.99,
-                  pitch: 30,
-                  bearing: 50
+                  zoom: 17.8,
+                  bearing: -50,
+                  pitch: 15
                 });
               }
             }
+            map.removeLayer(layerId);
           } else {
             currentCollection = 'ATL08';
             map.eachLayer(function (layer) {
