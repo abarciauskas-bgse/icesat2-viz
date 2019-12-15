@@ -53,9 +53,7 @@
     container: 'map',
     style: 'mapbox://styles/mapbox/outdoors-v11',
     center: [-52.1572, -0.40637],
-    zoom: 14.99,
-    //bearing: 35,
-    //pitch: 35,
+    zoom: 13.99,
     hash: true
   });
   let currentCollection = 'ATL08';
@@ -64,14 +62,15 @@
   
   // set dot brightness adjustment
   const brightness = 1.8
-  const layerId = 'deckgl-PointCloudLayer';
+  const initialLayerId = 'deckgl-PointCloudLayer';
+  let currentLayers = [];
 
   map.on('style.load', () => {
     map.addControl(new mapboxgl.NavigationControl());
     addPointLayer(filePrefix);
   });
   
-  function addPointLayer(filePrefix, opts = { layerId }) {
+  function addPointLayer(filePrefix, opts = { layerId: initialLayerId }) {
     const geoJSONUrl = `./geojsons/${filePrefix}.geojson`;
     $.getJSON(geoJSONUrl, function(geoJSON) {
       //console.log(JSON.stringify(geoJSON, null, 2));
@@ -101,7 +100,7 @@
           properties: f.properties
         }
       });
-      console.log(JSON.stringify(pointData, null, 2));
+      //console.log(JSON.stringify(pointData, null, 2));
       //console.log(`adding layer ${filePrefix}`)
 
       map.addLayer(new MapboxLayer({
@@ -119,14 +118,16 @@
           // toggle layers
           if (currentCollection === 'ATL08') {
             currentCollection = 'ATL03';
+            currentLayers = [];
             const beginningSegmentId = info.object.properties.beginning_segment_id;
             const endingSegmentId = info.object.properties.ending_segment_id;
             const middleSegmentId = (endingSegmentId - beginningSegmentId) / 2 + beginningSegmentId;
             for (let idx = beginningSegmentId; idx <= endingSegmentId; idx++) {
+              let currentLayerId = `${idx}-layer`;
+              currentLayers.push(currentLayerId);
               filePrefix = `${idx}_ATL03_${currentGranuleId}`;
-              addPointLayer(filePrefix, { layerId: `${idx}-layer` });
+              addPointLayer(filePrefix, { layerId: currentLayerId });
               if (idx === middleSegmentId) {
-                console.log(info);
                 map.flyTo({
                   center: info.lngLat,
                   zoom: 17.8,
@@ -135,14 +136,21 @@
                 });
               }
             }
-            map.removeLayer(layerId);
+            map.removeLayer(initialLayerId);
           } else {
             currentCollection = 'ATL08';
-            map.eachLayer(function (layer) {
-              map.removeLayer(layer);
+            currentLayers.forEach(function (layerId) {
+              map.removeLayer(layerId);
             });
+            currentLayers = [];
             filePrefix = `ATL08_${currentGranuleId}`;
             addPointLayer(filePrefix);
+            map.flyTo({
+              center: info.lngLat,
+              zoom: 13.99,
+              bearing: 0,
+              pitch: 0
+            });
           }
           return true;
         }
