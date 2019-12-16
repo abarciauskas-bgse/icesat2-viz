@@ -6,8 +6,7 @@ import json
 # There are 921647 signal photons in the ATL08 gt1r track, but only 72079 unique
 # Each ATL08 land_segment has a beginning and ending segment id, which appears
 # to be 4 photon segments, e.g. 1004095 - 1004099
-
-filename = '_20190905152748_10620408_002_01.h5'
+filename = '_20190617150548_12270308_002_01.h5'
 collection = 'ATL03'
 f = h5py.File(f"hdfs/{collection}{filename}", 'r')
 
@@ -16,12 +15,10 @@ f = h5py.File(f"hdfs/{collection}{filename}", 'r')
 # len(f['gt1r']['heights']['h_ph']) --> 9,978,040 --> would take over 2 days to
 # generate geojson and would be very big. perhaps if we can store photons by
 # np.sum(list(f['gt1r']['geolocation']['segment_ph_cnt'])) --> 9,978,040
-limit = 1000
 resolution = 0.00001
-ph_idx_max = 9978040
+ph_idx_max = 469537
 feature_collection = {
     "type": "FeatureCollection",
-    "totalFeatures": limit,
     "features": []
 }
 features_list = []
@@ -30,7 +27,6 @@ feature_type = 'point'
 
 # Should do this for gt1l, gt2r, gt2l, gt3r, gt3l
 track = 'gt1r'
-
 if collection == 'ATL03':
     heights = f[track]['heights']
 elif collection == 'ATL08':
@@ -62,7 +58,8 @@ def gen_feature_geometry(latitude, longitude):
    
 
 outfilename = f"{collection}{filename.replace('h5', 'geojson')}"
-for idx in range(100000, 150000):
+
+for idx in range(20000, 30000):
     feature = {
         "type": "Feature",
         "id": idx,
@@ -95,11 +92,13 @@ for idx in range(100000, 150000):
                 features_list.append(feature)
         if len(features_list) > 0:
             feature_collection['features'] = features_list
+            feature_collection['totalFeatures'] = len(features_list)
             seg_outfilename = f"{segment_id}_{outfilename}"
             with open(f"geojsons/{seg_outfilename}", 'w') as outfile:
                 json.dump(feature_collection, outfile)
                 outfile.close()
         features_list = []
+        print(f"Done processing ATL03 segment {idx}")
     elif collection == 'ATL08':
         latitude = float(land_segments['latitude'][idx])
         longitude = float(land_segments['longitude'][idx])
@@ -110,12 +109,15 @@ for idx in range(100000, 150000):
         feature['properties']['beginning_segment_id'] = float(land_segments['segment_id_beg'][idx])
         feature['properties']['ending_segment_id'] = float(land_segments['segment_id_end'][idx])
         features_list.append(feature)
-        if len(features_list) > 0:
-            feature_collection['features'] = features_list
-            with open(f"geojsons/{outfilename}", 'w') as outfile:
-                json.dump(feature_collection, outfile)
-                outfile.close()
-        features_list = []
+
+if collection == 'ATL08' and len(features_list) > 0:
+    feature_collection['features'] = features_list
+    feature_collection['totalFeatures'] = len(features_list)
+    with open(f"geojsons/{outfilename}", 'w') as outfile:
+        json.dump(feature_collection, outfile)
+        outfile.close()
+    features_list = []
+    print('Done with ATL08')
 
 f.close()
 

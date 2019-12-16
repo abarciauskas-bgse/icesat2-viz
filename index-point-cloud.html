@@ -52,12 +52,12 @@
   const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/outdoors-v11',
-    center: [-52.1572, -0.40637],
+    center: [10.51346780, -3.0930829],
     zoom: 13.99,
     hash: true
   });
   let currentCollection = 'ATL08';
-  let currentGranuleId = '20190905152748_10620408_002_01';
+  let currentGranuleId = '20190617150548_12270308_002_01';
   let filePrefix = `${currentCollection}_${currentGranuleId}`;
   
   // set dot brightness adjustment
@@ -77,17 +77,18 @@
       let pointSize = 0;
       const pointData = geoJSON.features.map(f => {
         let z = 0;
-        let zrandomness = Math.random() * 10 - Math.random() * 10;
-        let color = [0, 255, 255];
+        let zrandomness = Math.random() * 20 - Math.random() * 20;
+        let color;
         if (f.properties.collection === 'ATL08') {
           z = f.properties['dem_meters'];
           // 100 is a good size for atl08 and 5 for atl03
           pointSize = 100;
+          color = [255, 228, 20, 100];
         } else if (f.properties.collection === 'ATL03') {
           z = f.properties['photon_height_meters'];
           z = z + zrandomness;
-          pointSize = 0.5;
-          color = [173, 255, 47];
+          pointSize = 2;
+          color = [255, 25, 143 + z, 100];
         }
 
         return  {
@@ -112,7 +113,7 @@
         getNormal: d => [-1, 0, 0],
         sizeUnits: 'meters',
         pointSize,
-        opacity: 0.33,
+        opacity: 1,
         pickable: true,
         onClick: (info, event) => {
           // toggle layers
