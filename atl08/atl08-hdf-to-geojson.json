@@ -1,0 +1,19 @@
+ {
+    "pipeline": [
+    {
+        "type": "readers.hdf",
+        "dimensions":
+        {
+            "X" : "X",
+            "Y" : "Y",
+            "Z" : "Z"
+        }
+    },
+        {
+            "type": "writers.text",
+            "format": "geojson",
+            "order": "X,Y,Z",
+            "write_header": false
+        }
+    ]
+}
