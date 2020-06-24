@@ -1,0 +1,15 @@
+[
+{
+type: "readers.hdf",
+filename: "ATL03_20181013235645_02340114_003_01.h5",
+dimensions: {
+X: "gt1l/heights/lon_ph",
+Y: "gt1l/heights/lat_ph",
+Z: "gt1l/heights/h_ph"
+}
+},
+{
+type: "writers.las",
+filename: "output.las"
+}
+]
